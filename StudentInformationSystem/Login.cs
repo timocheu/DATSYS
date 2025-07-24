@@ -1,7 +1,10 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using StudentInformationSystem.Forms;
 using StudentInformationSystem.Models;
 using System.ComponentModel;
 using System.Configuration;
+using Utility.Password;
 
 namespace StudentInformationSystem
 {
@@ -15,59 +18,51 @@ namespace StudentInformationSystem
 
         private void btn_Login_Click(object sender, EventArgs e)
         {
-            using SisContext context = new SisContext();
-
-            if (context.UserLogins.Any(u =>
-            u.Username == tb_Username.Text && 
-            u.PasswordHash == tb_Password.Text
-            ))
-            {
-                new AdminDashboard().Show();
-                this.Hide();
-            }
-            else
-            {
-                MessageBox.Show("No user found or doesnt exist");
-            }
         }
 
         private void btn_RegisterAdmin_ClickAsync(object sender, EventArgs e)
         {
-            RegisterPerson();
-        }
-
-        private async Task RegisterPerson()
-        {
             using SisContext context = new();
-            
-            foreach (var r in context.Roles.ToArray())
+
+            try
             {
-                MessageBox.Show(r.RoleName);
+                var user = new User
+                {
+                    FirstName = "Anchor",
+                    LastName = "Arnejo",
+                    DateOfBirth = DateTime.Parse("2004-01-04"),
+                    Gender = "Male",
+                    Email = "anchor@gmail.com",
+                    Phone = "+09066671234",
+                    Role = context.Roles.First(r => r.RoleName == "Teacher"),
+                };
+
+                var StudentLogin = new UserLogin
+                {
+                    Username = "AnchorTeacher",
+                    PasswordHash = Password.Hash("TeacherPass"),
+                    User = user,
+                };
+
+                context.Users.Add(user);
+                context.UserLogins.Add(StudentLogin);
+                context.SaveChanges();
+
+
+            }
+            catch (DbUpdateException ex)
+            {
+                MessageBox.Show("DbUpdateException: " + ex.Message);
+
+                if (ex.InnerException != null)
+                    MessageBox.Show("InnerException: " + ex.InnerException.Message);
+
+                if (ex.InnerException?.InnerException != null)
+                    MessageBox.Show("Deeper Inner: " + ex.InnerException.InnerException.Message);
             }
 
-            var TimAdmin = new User
-            {
-                FirstName = "Timotheo",
-                LastName = "Padilla",
-                DateOfBirth = DateTime.Parse("2004-07-22"),
-                Gender = "Male",
-                Email = "tim@gmail.com",
-                Role = context.Roles.First(r => r.RoleName == "Admin"),
-            };
 
-            var AdminLogin = new UserLogin
-            {
-                Username = "TimAdmin",
-                PasswordHash = "AdminPass",
-                User = TimAdmin,
-            };
-
-            context.Users.Add(TimAdmin);
-            context.UserLogins.Add(AdminLogin);
-
-            await context.SaveChangesAsync();
-
-            if (context.Users.Any(u => u.Email == "tim@gmail.com"))
+            if (context.Users.Any(u => u.Email == "anchor@gmail.com"))
             {
                 MessageBox.Show("Successfully registerd");
             }
@@ -77,5 +72,45 @@ namespace StudentInformationSystem
             }
         }
 
+        private void materialButton1_Click(object sender, EventArgs e)
+        {
+            using SisContext context = new();
+
+            var user = context.UserLogins
+                .Include(u => u.User)
+                .FirstOrDefault(u =>
+                    u.Username == tb_Username.Text &&
+                    u.PasswordHash == Password.Hash(tb_Password.Text));
+
+            if (user is not null)
+            {
+                var role = context.Roles.First(r => r.RoleId == user.User.RoleId);
+
+                if (role is not null)
+                {
+                    switch (role.RoleName)
+                    {
+                        case "Student":
+                            new StudentDashboard().Show();
+                            break;
+                        case "Teacher":
+                            new TeacherDashboard().Show();
+                            break;
+                        case "Admin":
+                            new AdminDashboard().Show();
+                            break;
+                        default:
+                            MessageBox.Show("Unable to find the role", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                            return;
+                    }
+
+                    this.Hide();
+                }
+            }
+            else
+            {
+                MessageBox.Show("Unable to login!");
+            }
+        }
     }
 }
