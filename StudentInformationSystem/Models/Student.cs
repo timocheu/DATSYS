@@ -3,11 +3,9 @@ using System.Collections.Generic;
 
 namespace StudentInformationSystem.Models;
 
-public partial class Student : User
+public partial class Student
 {
     public int UserId { get; set; }
-
-    public string? Address { get; set; }
 
     public DateTime? EnrollmentDate { get; set; }
 

@@ -15,8 +15,6 @@ public partial class SisContext : DbContext
     {
     }
 
-    public virtual DbSet<Admin> Admins { get; set; }
-
     public virtual DbSet<Course> Courses { get; set; }
 
     public virtual DbSet<Grade> Grades { get; set; }
@@ -37,115 +35,198 @@ public partial class SisContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // === BASE ENTITY ===
+        modelBuilder.Entity<Course>(entity =>
+        {
+            entity.HasKey(e => e.CourseId).HasName("PK__Course__8F1EF7AEE99D16A9");
+
+            entity.ToTable("Course");
+
+            entity.HasIndex(e => e.CourseCode, "UQ__Course__AB6B45F1D99695CE").IsUnique();
+
+            entity.Property(e => e.CourseId)
+                .ValueGeneratedNever()
+                .HasColumnName("course_id");
+            entity.Property(e => e.CourseCode)
+                .HasMaxLength(15)
+                .IsUnicode(false)
+                .HasColumnName("course_code");
+            entity.Property(e => e.CourseName)
+                .HasMaxLength(30)
+                .IsUnicode(false)
+                .HasColumnName("course_name");
+            entity.Property(e => e.Credits).HasColumnName("credits");
+            entity.Property(e => e.Description)
+                .HasMaxLength(150)
+                .IsUnicode(false)
+                .HasColumnName("description");
+            entity.Property(e => e.TeacherId).HasColumnName("teacher_id");
+
+            entity.HasOne(d => d.Teacher).WithMany(p => p.Courses)
+                .HasForeignKey(d => d.TeacherId)
+                .HasConstraintName("FK__Course__teacher___59FA5E80");
+        });
+
+        modelBuilder.Entity<Grade>(entity =>
+        {
+            entity.HasKey(e => e.GradeId).HasName("PK__Grade__3A8F732C5BE54598");
+
+            entity.ToTable("Grade");
+
+            entity.Property(e => e.GradeId)
+                .ValueGeneratedNever()
+                .HasColumnName("grade_id");
+            entity.Property(e => e.CourseId).HasColumnName("course_id");
+            entity.Property(e => e.Grade1).HasColumnName("grade");
+            entity.Property(e => e.GradeDate)
+                .HasColumnType("datetime")
+                .HasColumnName("grade_date");
+            entity.Property(e => e.Semester).HasColumnName("semester");
+            entity.Property(e => e.StudentId).HasColumnName("student_id");
+
+            entity.HasOne(d => d.Course).WithMany(p => p.Grades)
+                .HasForeignKey(d => d.CourseId)
+                .HasConstraintName("FK__Grade__course_id__5FB337D6");
+
+            entity.HasOne(d => d.Student).WithMany(p => p.Grades)
+                .HasForeignKey(d => d.StudentId)
+                .HasConstraintName("FK__Grade__student_i__5EBF139D");
+        });
+
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.HasKey(e => e.RoleId).HasName("PK__Role__760965CCCDF5CDFF");
+
+            entity.ToTable("Role");
+
+            entity.HasIndex(e => e.RoleName, "UQ__Role__783254B1D026A2BA").IsUnique();
+
+            entity.Property(e => e.RoleId).HasColumnName("role_id");
+            entity.Property(e => e.RoleName)
+                .HasMaxLength(30)
+                .IsUnicode(false)
+                .HasColumnName("role_name");
+        });
+
+        modelBuilder.Entity<Student>(entity =>
+        {
+            entity.HasKey(e => e.UserId).HasName("PK__Student__B9BE370FFE32F30D");
+
+            entity.ToTable("Student");
+
+            entity.Property(e => e.UserId)
+                .ValueGeneratedNever()
+                .HasColumnName("user_id");
+            entity.Property(e => e.EnrollmentDate)
+                .HasColumnType("datetime")
+                .HasColumnName("enrollment_date");
+            entity.Property(e => e.Status).HasColumnName("status");
+
+            entity.HasOne(d => d.User).WithOne(p => p.Student)
+                .HasForeignKey<Student>(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Student__user_id__52593CB8");
+        });
+
+        modelBuilder.Entity<Teacher>(entity =>
+        {
+            entity.HasKey(e => e.UserId).HasName("PK__Teacher__B9BE370F444D5403");
+
+            entity.ToTable("Teacher");
+
+            entity.Property(e => e.UserId)
+                .ValueGeneratedNever()
+                .HasColumnName("user_id");
+            entity.Property(e => e.Department)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("department");
+            entity.Property(e => e.HireDate)
+                .HasColumnType("datetime")
+                .HasColumnName("hire_date");
+            entity.Property(e => e.Specialization)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("specialization");
+            entity.Property(e => e.Status).HasColumnName("status");
+
+            entity.HasOne(d => d.User).WithOne(p => p.Teacher)
+                .HasForeignKey<Teacher>(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__Teacher__user_id__5535A963");
+        });
+
         modelBuilder.Entity<User>(entity =>
         {
-            // === BASE ENTITY ===
-            modelBuilder.Entity<User>(entity =>
-            {
-                entity.ToTable("User");
+            entity.HasKey(e => e.UserId).HasName("PK__User__B9BE370FACDB9D2A");
 
-                entity.HasKey(e => e.UserId);
+            entity.ToTable("User");
 
-                entity.HasIndex(e => e.Email).IsUnique();
-                entity.HasIndex(e => e.Phone).IsUnique();
+            entity.HasIndex(e => e.Email, "UQ__User__AB6E6164CE80F62C").IsUnique();
 
-                entity.Property(e => e.UserId).HasColumnName("user_id");
-                entity.Property(e => e.FullName).HasColumnName("full_name").HasMaxLength(100).IsUnicode(false);
-                entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(100).IsUnicode(false);
-                entity.Property(e => e.Phone).HasColumnName("phone").HasMaxLength(20).IsUnicode(false);
-                entity.Property(e => e.Gender).HasColumnName("gender").HasMaxLength(20).IsUnicode(false);
-                entity.Property(e => e.DateOfBirth).HasColumnName("date_of_birth").HasColumnType("datetime");
-                entity.Property(e => e.Usertype).HasColumnName("usertype").HasMaxLength(20).IsUnicode(false);
-                entity.Property(e => e.CreatedAt).HasColumnName("created_at").HasDefaultValueSql("(getdate())").HasColumnType("datetime");
-            });
+            entity.HasIndex(e => e.Phone, "UQ__User__B43B145FFCFE4AF2").IsUnique();
 
-            // === DERIVED ENTITIES ===
-            // Admin
-            modelBuilder.Entity<Admin>().ToTable("Admin");
+            entity.Property(e => e.UserId).HasColumnName("user_id");
+            entity.Property(e => e.Address)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("address");
+            entity.Property(e => e.DateOfBirth)
+                .HasColumnType("datetime")
+                .HasColumnName("date_of_birth");
+            entity.Property(e => e.Email)
+                .HasMaxLength(100)
+                .IsUnicode(false)
+                .HasColumnName("email");
+            entity.Property(e => e.FirstName)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("first_name");
+            entity.Property(e => e.Gender)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("gender");
+            entity.Property(e => e.LastName)
+                .HasMaxLength(50)
+                .IsUnicode(false)
+                .HasColumnName("last_name");
+            entity.Property(e => e.Phone)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("phone");
+            entity.Property(e => e.RoleId).HasColumnName("role_id");
 
-            // Student (adds Address, Status, EnrollmentDate)
-            modelBuilder.Entity<Student>(entity =>
-            {
-                entity.ToTable("Student");
-                entity.Property(e => e.Address).HasColumnName("address").HasMaxLength(100).IsUnicode(false);
-                entity.Property(e => e.EnrollmentDate).HasColumnName("enrollment_date").HasColumnType("datetime");
-                entity.Property(e => e.Status).HasColumnName("status");
-            });
-
-            // Teacher (adds Department, Specialization, HireDate, Status)
-            modelBuilder.Entity<Teacher>(entity =>
-            {
-                entity.ToTable("Teacher");
-                entity.Property(e => e.Department).HasColumnName("department").HasMaxLength(50).IsUnicode(false);
-                entity.Property(e => e.Specialization).HasColumnName("specialization").HasMaxLength(50).IsUnicode(false);
-                entity.Property(e => e.HireDate).HasColumnName("hire_date").HasColumnType("datetime");
-                entity.Property(e => e.Status).HasColumnName("status");
-            });
-
-            // === LOGIN ===
-            modelBuilder.Entity<UserLogin>(entity =>
-            {
-                entity.ToTable("User_Login");
-                entity.HasIndex(e => e.Username).IsUnique();
-
-                entity.Property(e => e.UserId).HasColumnName("user_id");
-                entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(50).IsUnicode(false);
-                entity.Property(e => e.PasswordHash).HasColumnName("password_hash").HasMaxLength(128).IsUnicode(false);
-
-                entity.HasOne(e => e.User)
-                    .WithOne(u => u.UserLogin)
-                    .HasForeignKey<UserLogin>(e => e.UserId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_UserLogin_User");
-            });
-
-            // === COURSE ===
-            modelBuilder.Entity<Course>(entity =>
-            {
-                entity.ToTable("Course");
-                entity.HasKey(e => e.CourseId);
-                entity.HasIndex(e => e.CourseCode).IsUnique();
-
-                entity.Property(e => e.CourseId).HasColumnName("course_id");
-                entity.Property(e => e.CourseName).HasColumnName("course_name").HasMaxLength(50).IsUnicode(false);
-                entity.Property(e => e.CourseCode).HasColumnName("course_code").HasMaxLength(15).IsUnicode(false);
-                entity.Property(e => e.Description).HasColumnName("description").HasMaxLength(150).IsUnicode(false);
-                entity.Property(e => e.Credits).HasColumnName("credits");
-                entity.Property(e => e.TeacherId).HasColumnName("teacher_id");
-
-                entity.HasOne(d => d.Teacher).WithMany(p => p.Courses)
-                    .HasForeignKey(d => d.TeacherId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_Course_Teacher");
-            });
-
-            // === GRADE ===
-            modelBuilder.Entity<Grade>(entity =>
-            {
-                entity.ToTable("Grade");
-                entity.HasKey(e => e.GradeId);
-
-                entity.Property(e => e.GradeId).HasColumnName("grade_id");
-                entity.Property(e => e.StudentId).HasColumnName("student_id");
-                entity.Property(e => e.CourseId).HasColumnName("course_id");
-                entity.Property(e => e.Grade1).HasColumnName("grade");
-                entity.Property(e => e.Semester).HasColumnName("semester");
-                entity.Property(e => e.GradeDate).HasColumnName("grade_date").HasColumnType("datetime");
-
-                entity.HasOne(d => d.Student).WithMany(p => p.Grades)
-                    .HasForeignKey(d => d.StudentId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_Grade_Student");
-
-                entity.HasOne(d => d.Course).WithMany(p => p.Grades)
-                    .HasForeignKey(d => d.CourseId)
-                    .OnDelete(DeleteBehavior.ClientSetNull)
-                    .HasConstraintName("FK_Grade_Course");
-            });
-
-            OnModelCreatingPartial(modelBuilder);
+            entity.HasOne(d => d.Role).WithMany(p => p.Users)
+                .HasForeignKey(d => d.RoleId)
+                .HasConstraintName("FK__User__role_id__4F7CD00D");
         });
+
+        modelBuilder.Entity<UserLogin>(entity =>
+        {
+            entity.HasKey(e => e.UserId).HasName("PK__User_Log__B9BE370F0C4A91C9");
+
+            entity.ToTable("User_Login");
+
+            entity.HasIndex(e => e.Username, "UQ__User_Log__F3DBC572DE20A76C").IsUnique();
+
+            entity.Property(e => e.UserId)
+                .ValueGeneratedNever()
+                .HasColumnName("user_id");
+            entity.Property(e => e.PasswordHash)
+                .HasMaxLength(128)
+                .IsUnicode(false)
+                .HasColumnName("password_hash");
+            entity.Property(e => e.Username)
+                .HasMaxLength(30)
+                .IsUnicode(false)
+                .HasColumnName("username");
+
+            entity.HasOne(d => d.User).WithOne(p => p.UserLogin)
+                .HasForeignKey<UserLogin>(d => d.UserId)
+                .OnDelete(DeleteBehavior.ClientSetNull)
+                .HasConstraintName("FK__User_Logi__user___6383C8BA");
+        });
+
+        OnModelCreatingPartial(modelBuilder);
     }
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);

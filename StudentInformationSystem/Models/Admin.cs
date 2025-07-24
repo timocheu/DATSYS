@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace StudentInformationSystem.Models;
 
-public partial class Admin : User
+public partial class Admin
 {
     public int UserId { get; set; }
 

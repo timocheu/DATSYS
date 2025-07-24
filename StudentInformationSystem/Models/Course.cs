@@ -13,11 +13,11 @@ public partial class Course
 
     public string? Description { get; set; }
 
-    public byte? Credits { get; set; }
+    public int? Credits { get; set; }
 
-    public int TeacherId { get; set; }
+    public int? TeacherId { get; set; }
 
     public virtual ICollection<Grade> Grades { get; set; } = new List<Grade>();
 
-    public virtual Teacher Teacher { get; set; } = null!;
+    public virtual Teacher? Teacher { get; set; }
 }
